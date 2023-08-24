@@ -244,7 +244,7 @@ project() >>> This is sub-project-1
 
 
 
-#### subprojects(String)
+#### subprojects{...}
 
 이번에는 프로젝트 루트 내의 build.gradle.kts 에 subprjects 를 아래와 같이 작성해보자.
 
@@ -306,13 +306,231 @@ subprojects {...} >>> This is sub-project-2
 
 
 
-#### allprojects(String)
+#### allprojects {...}
 
+루트 프로젝트 내의 `build.gradle.kts` 의 내용을 아래와 같이 수정해준다.
+
+```kotlin
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+	id("org.springframework.boot") version "2.7.14"
+	id("io.spring.dependency-management") version "1.0.15.RELEASE"
+	kotlin("jvm") version "1.6.21"
+	kotlin("plugin.spring") version "1.6.21"
+}
+
+project("sub-project-1"){
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+
+	task("hello(sub-project-1)").doLast{
+		println("project() >>> This is ${project.name}")
+	}
+}
+
+project("sub-project-2"){
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+
+	task("hello(sub-project-2)").doLast{
+		println("project() >>> This is ${project.name}")
+	}
+}
+
+subprojects {
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+	apply(plugin = "org.jetbrains.kotlin.plugin.spring")
+	apply(plugin = "org.springframework.boot")
+	apply(plugin = "io.spring.dependency-management")
+
+	task("subprojects-println").doLast{
+		println("subprojects {...} >>> This is ${project.name}")
+	}
+}
+
+allprojects{
+	group = "io.study.mygradle"
+	version = "0.0.1-SNAPSHOT"
+
+	task("allprojects-println").doLast{
+		println("allprojects {...} >>> This is ${project.name}")
+	}
+
+	java {
+		sourceCompatibility = JavaVersion.VERSION_17
+	}
+
+	repositories {
+		mavenCentral()
+	}
+
+	dependencies {
+		implementation("org.springframework.boot:spring-boot-starter")
+		implementation("org.jetbrains.kotlin:kotlin-reflect")
+		testImplementation("org.springframework.boot:spring-boot-starter-test")
+	}
+
+	tasks.withType<KotlinCompile> {
+		kotlinOptions {
+			freeCompilerArgs += "-Xjsr305=strict"
+			jvmTarget = "17"
+		}
+	}
+
+	tasks.withType<Test> {
+		useJUnitPlatform()
+	}
+}
+```
+
+
+
+대부분의 공통적인 내용인 group, java, repositories, dependencies, KotlinCompile 등을 allprojects 에 포함시켜줬다.
+
+그리고 allprojects 내에서 수행할 태스크로 "allprojects-println" 이라는 태스크를 정의해줬다.
+
+```kotlin
+// ...
+
+task("allprojects-println").doLast{
+  println("allprojects {...} >>> This is ${project.name}")
+}
+
+// ...
+```
+
+<br>
+
+이렇게 한 후 gradle 메뉴에서 루트프로젝트 \> other \> `allprojects-println` 을 클릭해서 실행하면 출력결과는 아래와 같이 나타난다.
+
+```plain
+> Task :allprojects-println
+allprojects {...} >>> This is multi_module_basic1
+
+> Task :sub-project-1:allprojects-println
+allprojects {...} >>> This is sub-project-1
+
+> Task :sub-project-2:allprojects-println
+allprojects {...} >>> This is sub-project-2
+```
+
+<br>
+
+sub-project-1, sub-project-2 을 모두 실행시키고, 자기 자신인 allprojects 에 포함된 태스크들 역시 실행했음을 확인 가능하다. 
+
+<br>
 
 
 
 
 ### 3\) 의존성을 모듈들과 공유하는 방법
+
+##### 예제를 위해 `common` 이라는 서브 모듈 생성
+
+예제를 돌려보기 위해 common 이라는 서브 모듈을 생성해준다. 생성 과정은 생략하기로 했다. base package 명은 `io.study.mygradle.common` 이다. <br>
+
+순서만 요약해보면, 아래와 같은 순서로 생성했다.
+
+- common 이라는 이름의 Directory 를 생성
+- common 밑에 build.gradle.kts 파일을 생성
+- common 밑에 src/main/kotlin 디렉터리 생성
+- src/main/kotlin 디렉터리를 Mark As \> Sources Root 로 지정
+- common/src/main/kotlin 밑에 `io.study.mygradle.common` 패키지 생성
+- 루트 디렉터리 내의 settings.gradle.kts 파일 내에 common 프로젝트 import
+  - include("common")
+
+
+
+<br>
+
+> Intellij 메뉴를 사용하지 않고 직접 파일을 만들고 settings.gradle.kts 에 지정하는 방식을 선택했다. kotlin은 Intellij 에서 서브 모듈 생성 시 모든 모듈들에 java 파일을 만들어 내서 꽤 곤란할 때가 많다. 그래서 Intellij 의 기능을 가급적 사용하지 않는다.<br>
+
+<br>
+
+
+
+##### common 모듈 내의 build.gradle.kts
+
+build.gradle.kts
+
+```kotlin
+tasks.getByName("bootJar"){
+    enabled = false
+}
+
+tasks.getByName("jar"){
+    enabled = true
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies{
+    implementation("com.google.code.gson:gson:2.10")
+}
+```
+
+
+
+##### CommonEntity.kt
+
+CommonEntity 는 예제를 위해 만든 클래스이다.
+
+common 모듈에서 gson을 사용하고 있는데 다른 모듈들 (sub-project-1, sub-project-2) 에서는 gson 을 라이브러리로 사용하고 있지 않을 경우에 대한 예제를 들기 위해 생성한 클래스이다. 
+
+```kotlin
+package io.study.mygradle.common
+
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+
+class CommonEntity (
+    private val id : String,
+    private val json: JsonObject = JsonObject()
+){
+    init {
+        json.addProperty("msg", "hello")
+        json.addProperty("age", "21")
+        println("jsonStr = ${Gson().toJson(json)}")
+    }
+}
+```
+
+
+
+##### sub-project-1 에서 common 의 CommonEntity 를 상속한 클래스 작업
+
+###### 문제점 : sub-project-1 에서는 common 의 gson 라이브러리를 읽어오지 못한다.
+
+sub-project-1 에서 common 의 CommonEntity 를 상속한 클래스는 SubProject1User 다. 이 클래스는 아래와 같이 작성해줬다.
+
+```kotlin
+package io.study.mygradle.sub_project_1
+
+import io.study.mygradle.common.CommonEntity
+
+class SubProject1User (
+    private val id : String
+): CommonEntity(
+    id = id,
+    json = com.google.gson.JsonObject(), // 여기서 문제. 의존성을 불러오지 못한다.
+) {
+}
+```
+
+
+
+그런데 문제가 있다. sub-project-1 에서는 common 프로젝트 내에서 사용하는 gson 라이브러리를 가져다 쓸 방법이 없다. 즉 sub-project-1 의 라이브러리 의존성 중 필요한 라이브러리는 그대로 가져와서 사용하는 것이 불가능한 상태다.<br>
+
+<br>
+
+
+
+###### 해결 방법 : implementation(...) 대신 api(...) 을 사용한다.
+
+
+
+
 
 
 
