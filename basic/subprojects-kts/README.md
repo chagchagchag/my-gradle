@@ -100,7 +100,7 @@ Mark Directory As ... \> Sources Root 를 클릭
 ```kotlin
 package io.study.mygradle.sub_project_1
 
-class SubProjectUser {
+class SubProject1User {
 }
 ```
 
@@ -113,6 +113,77 @@ class SubProjectUser {
 새로 생성한 모듈인 `sub-project-1` 내에 `build.gradle.kts` 파일을 생성한다. 
 
 <img src="./img/8.png" width="60%" height="60%"/>  
+
+
+
+#### 인텔리제이에서 서브모듈 생성
+
+인텔리제이로 생성할 때 일부 파일이 Java로 바뀌기도 하고 관련된 인텔리제이의 GUI 기능이 불안정하다.
+
+<img src="./img/9.png" width="60%" height="60%"/>
+
+
+
+<img src="./img/10.png" width="60%" height="60%"/>
+
+
+
+<img src="./img/11.png" width="60%" height="60%"/>
+
+
+
+생성된 kotlin 디렉터리는 아래와 같이 Sources Root 으로 설정해준다.
+
+<img src="./img/6.png" width="60%" height="60%"/>
+
+
+
+패키지를 생성한다.
+
+- io.study.mygradle.sub\_project\_2 라는 이름의 패키지를 생성해줬다.
+
+<br>
+
+
+
+생성한 패키지 안에는 SampleProject2User.kt 클래스를 만들어주고 내용은 아래와 같이 정의해줬다. 
+
+```kotlin
+package io.study.mygradle.sub_project_2
+
+class SubProject2User {
+}
+```
+
+<br>
+
+
+
+생성된 build.gradle.kts 파일은 아래와 같다.
+
+```kotlin
+plugins {
+    id("java")
+}
+
+group = "io.study.mygradle"
+version = "0.0.1-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+```
+
+
 
 
 
