@@ -187,9 +187,9 @@ tasks.test {
 
 
 
-### 2\) 하나의 모듈을 다른 모듈에서 import 해서 사용하는 법
+### 2\) project, subprojects, allprojects : 각각의 범위하나의 모듈을 다른 모듈에서 import 해서 사용하는 법
 
-#### build.gradle(kts) : project, subprojects , allprojects
+#### project, subprojects , allprojects
 
 여기서 정리할 예제는 project, subprojects, allprojects 라는 속성에 대한 예제다.
 
@@ -198,9 +198,10 @@ tasks.test {
   - 자세한 내용은 아래에 설명하는 예제를 확인
 - subprojects 
   - 모든 subproject 각각에 대해 수행된다.
-  - `A`, `B` `C` 라는 서브모듈이 있을때 만약 루트 프로젝트의 `build.gradle.kts` 파일 내의 subprojects{...} 내에 println("hello")를 호출하는 코드를 작성했다고 하면 `A`, `B` `C` 각각에 대해 "hello" 라는 문구가 출력된다.
+  - `A`, `B` `C` 라는 서브 모듈이 있을 때 만약 루트 프로젝트의 `build.gradle.kts` 파일 내의 subprojects{...} 내에 println("hello")를 호출하는 코드를 작성했다고 하면 `A`, `B` `C` 각각에 대해 "hello" 라는 문구가 출력된다.
 - allprojects
-  - 
+  - allprojects 는 루트 프로젝트 자기 자신을 포함해서 그 아래의 서브 모듈들도 모두 한 번 씩 호출하는 것을 의미한다.
+  - 예를 들어 `A`, `B` `C` 라는 서브 모듈이 있을 때 만약 루트 프로젝트의 allprojects{...} 내에 `allprojects-println` 이라는 Task 명으로 자기 자신의 `${project.name}` 을 출력하는 태스크를 구현했다고 해보자. 이 경우 `allprojects-println` 태스크를 실행할 때 `A`, `B`, `C` 모듈 각각이 자기 자신의 `${project.name}` 을 출력하게 된다. 자세한 내용은 하단 예제 참고
 
 <br>
 
@@ -422,7 +423,7 @@ sub-project-1, sub-project-2 을 모두 실행시키고, 자기 자신인 allpro
 
 
 
-### 3\) 의존성을 모듈들과 공유하는 방법
+### 3\) common ↔ sub-module-project1 : 의존성을 모듈들과 공유하는 방법
 
 ##### 예제를 위해 `common` 이라는 서브 모듈 생성
 
@@ -528,15 +529,60 @@ class SubProject1User (
 
 ###### 해결 방법 : implementation(...) 대신 api(...) 을 사용한다.
 
+implementation(...) 을 사용하는 대신 api(...) 을 사용하도록 변경해준다.
+
+common 모듈 내의 build.gradle.kts 은 아래와 같다.
+
+```kotlin
+plugins{
+    kotlin("jvm") version "1.6.21"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies{
+    apply(plugin ="org.jetbrains.kotlin.jvm")
+//    implementation("com.google.code.gson:gson:2.10")	// 주석처리
+    api("com.google.code.gson:gson:2.10")			// gson 을 api(...) 를 로드하도록 변경
+}
+
+tasks.getByName("bootJar"){
+    enabled = false
+}
+
+tasks.getByName("jar"){
+    enabled = true
+}
+```
+
+<br>
 
 
 
+이렇게 하면, 이웃 모듈인 `sub-module-project-1` 의 `SubProject1User` 에서도 Gson 라이브러리를 import 할 수 있게 되었다.
+
+```kotlin
+package io.study.mygradle.sub_project_1
+
+import com.google.gson.JsonObject
+import io.study.mygradle.common.CommonEntity
+
+class SubProject1User (
+    private val id : String
+) : CommonEntity(
+    id = id,
+    json = JsonObject()
+) {
+}
+```
+
+<br>
 
 
 
-
-
-### 4\) external 파일에 dependency 들을 저장해두는 방법
+### 4\) dependencies.gradle - external 파일에 dependency 들을 저장해두는 방법
 
 
 
