@@ -189,6 +189,125 @@ tasks.test {
 
 ### 2\) 하나의 모듈을 다른 모듈에서 import 해서 사용하는 법
 
+#### build.gradle(kts) : project, subprojects , allprojects
+
+여기서 정리할 예제는 project, subprojects, allprojects 라는 속성에 대한 예제다.
+
+- project(String)
+  - 특정 프로젝트를 지정해서 task를 수행하는 방식이다.
+  - 자세한 내용은 아래에 설명하는 예제를 확인
+- subprojects 
+  - 모든 subproject 각각에 대해 수행된다.
+  - `A`, `B` `C` 라는 서브모듈이 있을때 만약 루트 프로젝트의 `build.gradle.kts` 파일 내의 subprojects{...} 내에 println("hello")를 호출하는 코드를 작성했다고 하면 `A`, `B` `C` 각각에 대해 "hello" 라는 문구가 출력된다.
+- allprojects
+  - 
+
+<br>
+
+#### project(String)
+
+프로젝트 루트의 build.gradle.kts 를 아래와 같이 작성해준다.
+
+```kotlin
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+// ...
+
+project("sub-project-1"){
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+
+	task("hello(sub-project-1)").doLast{
+		println("project() >>> This is ${project.name}")
+	}
+}
+
+// ...
+
+```
+
+<br>
+
+
+
+그리고 인텔리제이의 우측 사이드바의 Gradle 메뉴에 생성된 Task 중 `hello(sub-project-1)` 을 실행해보자.
+
+아래와 같은 결과가 나타난다.
+
+```plain
+> Task :sub-project-1:hello(sub-project-1)
+project() >>> This is sub-project-1
+
+...
+```
+
+<br>
+
+
+
+#### subprojects(String)
+
+이번에는 프로젝트 루트 내의 build.gradle.kts 에 subprjects 를 아래와 같이 작성해보자.
+
+```kotlin
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+// ...
+
+dependencies {
+	implementation("org.springframework.boot:spring-boot-starter")
+	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+project("sub-project-1"){
+  // ...
+}
+
+// ...
+
+subprojects {
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+	apply(plugin = "org.jetbrains.kotlin.plugin.spring")
+	apply(plugin = "org.springframework.boot")
+	apply(plugin = "io.spring.dependency-management")
+
+	task("subprojects-println").doLast{
+		println("subprojects {...} >>> This is ${project.name}")
+	}
+}
+
+// ...
+
+```
+
+
+
+<br>
+
+그리고 터미널에 아래 명령어를 수행한다.
+
+- ./gradlew subprojects-println
+
+<br>
+
+수행 결과는 아래와 같다.
+
+```plain
+// ...
+> Task :sub-project-1:subprojects-println
+subprojects {...} >>> This is sub-project-1
+
+> Task :sub-project-2:subprojects-println
+subprojects {...} >>> This is sub-project-2
+// ...
+```
+
+<br>
+
+
+
+#### allprojects(String)
+
 
 
 

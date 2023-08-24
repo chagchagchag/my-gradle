@@ -24,6 +24,33 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
+project("sub-project-1"){
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+
+	task("hello(sub-project-1)").doLast{
+		println("project() >>> This is ${project.name}")
+	}
+}
+
+project("sub-project-2"){
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+
+	task("hello(sub-project-2)").doLast{
+		println("project() >>> This is ${project.name}")
+	}
+}
+
+subprojects {
+	apply(plugin = "org.jetbrains.kotlin.jvm")
+	apply(plugin = "org.jetbrains.kotlin.plugin.spring")
+	apply(plugin = "org.springframework.boot")
+	apply(plugin = "io.spring.dependency-management")
+
+	task("subprojects-println").doLast{
+		println("subprojects {...} >>> This is ${project.name}")
+	}
+}
+
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
 		freeCompilerArgs += "-Xjsr305=strict"
